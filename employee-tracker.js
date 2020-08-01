@@ -3,14 +3,8 @@ const inquirer = require("inquirer");
 
 const connection = mysql.createConnection({
     host: "localhost",
-
-    // Your port; if not 3306
     port: 3306,
-
-    // Your username
     user: "root",
-
-    // Your password
     password: "Sequel89!",
     database: "ems_db"
 });
@@ -27,24 +21,34 @@ let rolesList;
 let managersList;
 let departmentsList;
 let employeesList;
+let notManagersList;
 
-function mainMenu() {
+// Generate correct list of data to be used for inquirer choices
+function mapping() {
     connection.query("SELECT * FROM role", function(error, res) {
-        rolesList = res.map(role => ({name: role.title, value: role.id}))
+        rolesList = res.map(role => ({name: role.title, value: role.id}));
     });
 
     connection.query("SELECT * FROM employee WHERE manager_id IS NULL", function(error, res) {
-        managersList = res.map(man => ({name: `${man.first_name} ${man.last_name}`, value: man.id}))
+        managersList = res.map(man => ({name: `${man.first_name} ${man.last_name}`, value: man.id}));
     });
 
     connection.query("SELECT * FROM department", function(error, res) {
-        departmentsList = res.map(dept => ({name: dept.name, value: dept.id}))
+        departmentsList = res.map(dept => ({name: dept.name, value: dept.id}));
     });
 
     connection.query("SELECT * FROM employee", function(error, res) {
-        employeesList = res.map(emp => ({name: `${emp.first_name} ${emp.last_name}`, value: emp.id}))
+        employeesList = res.map(emp => ({name: `${emp.first_name} ${emp.last_name}`, value: emp.id}));
     });
 
+    connection.query("SELECT * FROM employee WHERE manager_id IS NOT NULL", function(error, res) {
+        notManagersList = res.map(notMan => ({name: `${notMan.first_name} ${notMan.last_name}`, value: notMan.id}));
+    });
+}
+
+// Main Menu of the application
+function mainMenu() {
+    mapping();
     inquirer.prompt(
       {
         type: "list",
@@ -54,6 +58,10 @@ function mainMenu() {
           {
             name: "View All Employees",
             value: "viewEmp"
+          },
+          {
+            name: "View Employees by Manager",
+            value: "viewEmpMan"
           },
           {
             name: "View All Departments",
@@ -80,6 +88,10 @@ function mainMenu() {
             value: "updateRole"
           },
           {
+            name: "Update Employee Manager",
+            value: "updateManager"
+          },
+          {
             name: "Quit",
             value: "end"
           }
@@ -89,10 +101,14 @@ function mainMenu() {
     })
 }
 
-function execute(option) {
-    switch (option) {
+// Function to execute the user choice from the main menu
+function execute(userChoice) {
+    switch (userChoice) {
         case "viewEmp":
             viewEmp();
+            break;
+        case "viewEmpMan":
+            viewEmpMan();
             break;
         case "viewDept":
             viewDept();
@@ -111,6 +127,9 @@ function execute(option) {
             break;
         case "updateRole":
             updateRole();
+            break;
+        case "updateManager":
+            updateManager();
             break;
         case "end":
         connection.end();
@@ -137,6 +156,40 @@ function viewEmp() {
         , function (error, res) {
             console.table(res);
             mainMenu();
+        }
+    );
+}
+
+//Function to view employees by manager
+function viewEmpMan() {
+    inquirer.prompt([
+        {
+            type: 'list',
+            name: "managerID",
+            message: "Please select the manager of the employees you would like to view.",
+            choices: managersList
+        }
+    ]).then(function(data) {
+        let managerEmp = data.managerID;
+
+        connection.query(
+            `
+                SELECT
+                    emp1.id AS 'Employee ID',
+                    emp1.first_name AS 'First Name',
+                    emp1.last_name AS 'Last Name',
+                    CONCAT(emp2.first_name, ' ', emp2.last_name) AS Manager
+                FROM employee emp1
+                INNER JOIN employee emp2
+                ON emp1.manager_id = emp2.id
+                WHERE emp2.id = ?
+            `
+            , [managerEmp]
+            , function (error, res) {
+                console.table(res);
+                mainMenu();
+            }
+        );
     });
 }
 
@@ -151,7 +204,8 @@ function viewDept() {
         , function (error, res) {
         console.table(res);
         mainMenu();
-    });
+        }
+    );
 }
 
 // Function to view all roles
@@ -169,7 +223,8 @@ function viewRoles() {
         , function (error, res) {
         console.table(res);
         mainMenu();
-    });
+        }
+    );
 }
 
 // Function to add an Employee
@@ -214,6 +269,7 @@ function addEmp() {
     });
 }
 
+// Function to add a department
 function addDept() {
     inquirer.prompt([
         {
@@ -235,6 +291,7 @@ function addDept() {
     });
 }
 
+// Function to add a role
 function addRole() {
     inquirer.prompt([
         {
@@ -269,6 +326,7 @@ function addRole() {
     });
 }
 
+// Function to update employee role
 function updateRole() {
     inquirer.prompt([
         {
@@ -293,9 +351,40 @@ function updateRole() {
             if (error) throw error;
         });
 
-        console.log("==================================");
-        console.log("Employee Role Successfully Update!");
-        console.log("==================================");
+        console.log("===================================");
+        console.log("Employee Role Successfully Updated!");
+        console.log("===================================");
+        mainMenu();
+    });
+}
+
+function updateManager() {
+    inquirer.prompt([
+        {
+            type: "list",
+            name: "updateEmp",
+            message: "Select the employee you would like to update the manager of.",
+            choices: notManagersList
+        },
+        {
+            type: "list",
+            name: "newManager",
+            message: "Who is the employee's new manager?",
+            choices: managersList
+        }
+    ]).then(function(data) {
+        let dataA = data.updateEmp;
+        let dataB = data.newManager;
+
+        connection.query("UPDATE employee SET manager_id = ? WHERE id = ? ", 
+        [dataB, dataA],
+        function (error, res) {
+            if (error) throw error;
+        });
+
+        console.log("======================================");
+        console.log("Employee Manager Successfully Updated!");
+        console.log("======================================");
         mainMenu();
     });
 }
