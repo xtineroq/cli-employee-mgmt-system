@@ -28,8 +28,7 @@ connection.connect(function(err) {
         showRoles = res.map(role => ({ name: role.title, value: role.id }))
     });
 
-    // fix this!!!
-    connection.query("SELECT * FROM employee WHERE manager_id <> ?", [null], function (error, res) {
+    connection.query("SELECT * FROM employee WHERE manager_id IS NULL", function (error, res) {
         showManagers = res.map(emp => ({ name: `${emp.first_name} ${emp.last_name}`, value: emp.id }))
     });
 
@@ -113,12 +112,36 @@ function execute(option) {
 
 // Function to view all employees
 function viewEmp() {
-
+    connection.query(
+        `
+            SELECT
+                employee.id AS 'Employee ID', 
+                employee.first_name AS 'First Name', 
+                employee.last_name AS 'Last Name', 
+                role.title AS 'Position', 
+                role.salary AS 'Salary', 
+                department.name AS 'Department'
+            FROM employee
+            LEFT JOIN role
+            ON employee.role_id = role.id
+            LEFT JOIN department
+            ON role.department_id = department.id;
+        `
+        , function (error, res) {
+            console.table(res);
+            mainMenu();
+    });
 }
 
 // Function to view all departments
 function viewDept() {
-    connection.query("SELECT * FROM department", function (error, res) {
+    connection.query(
+        `
+            SELECT 
+                department.name AS 'Departments' 
+            FROM department
+        `
+        , function (error, res) {
         console.table(res);
         mainMenu();
     });
@@ -126,7 +149,17 @@ function viewDept() {
 
 // Function to view all roles
 function viewRoles() {
-    connection.query("SELECT * FROM role", function (error, res) {
+    connection.query(
+        `
+            SELECT 
+                role.title AS 'Position', 
+                role.salary AS 'Salary', 
+                department.name AS 'Department' 
+            FROM role 
+            LEFT JOIN department
+            ON role.department_id = department.id;
+        `
+        , function (error, res) {
         console.table(res);
         mainMenu();
     });
@@ -134,8 +167,7 @@ function viewRoles() {
 
 // Function to add an Employee
 function addEmp() {
-    inquirer
-      .prompt([
+    inquirer.prompt([
         {
           type: 'input',
           name: "firstName",
@@ -158,18 +190,40 @@ function addEmp() {
           message: "Who is the employee's manager?",
           choices: showManagers
         }
-    ]).then(function (response) {
-        // console.log(response);
-
+    ]).then(function(data) {
         connection.query("INSERT INTO employee SET ? ",
         {
-            first_name: response.firstName,
-            last_name: response.lastName,
-            role_id: response.role,
-            manager_id: response.manager
+            first_name: data.firstName,
+            last_name: data.lastName,
+            role_id: data.role,
+            manager_id: data.manager
         }, function (error, res) {
             if (error) throw error;
         });
+        console.log("============================");
+        console.log("Employee Successfully Added!");
+        console.log("============================");
         mainMenu();
-    })
+    });
+}
+
+function addDept() {
+    inquirer.prompt([
+        {
+          type: 'input',
+          name: "deptName",
+          message: "Please enter the name of the department you would like to add."
+        }
+    ]).then(function(data) {
+        connection.query("INSERT INTO department SET ? ",
+        {
+            name: data.deptName
+        }, function (error, res) {
+            if (error) throw error;
+        });
+        console.log("============================");
+        console.log("Department Successfully Added!");
+        console.log("============================");
+        mainMenu();
+    });
 }
