@@ -26,6 +26,7 @@ connection.connect(function(err) {
 let rolesList;
 let managersList;
 let departmentsList;
+let employeesList;
 
 function mainMenu() {
     connection.query("SELECT * FROM role", function(error, res) {
@@ -33,15 +34,18 @@ function mainMenu() {
     });
 
     connection.query("SELECT * FROM employee WHERE manager_id IS NULL", function(error, res) {
-        managersList = res.map(emp => ({name: `${emp.first_name} ${emp.last_name}`, value: emp.id}))
+        managersList = res.map(man => ({name: `${man.first_name} ${man.last_name}`, value: man.id}))
     });
 
     connection.query("SELECT * FROM department", function(error, res) {
         departmentsList = res.map(dept => ({name: dept.name, value: dept.id}))
     });
 
-    inquirer
-    .prompt(
+    connection.query("SELECT * FROM employee", function(error, res) {
+        employeesList = res.map(emp => ({name: `${emp.first_name} ${emp.last_name}`, value: emp.id}))
+    });
+
+    inquirer.prompt(
       {
         type: "list",
         message: "What would you like to do?",
@@ -194,7 +198,7 @@ function addEmp() {
             choices: managersList
         }
     ]).then(function(data) {
-        connection.query("INSERT INTO employee SET ?",
+        connection.query("INSERT INTO employee SET ? ",
         {
             first_name: data.firstName,
             last_name: data.lastName,
@@ -250,7 +254,7 @@ function addRole() {
             choices: departmentsList
         }
     ]).then(function(data) {
-        connection.query("INSERT INTO role SET ?",
+        connection.query("INSERT INTO role SET ? ",
         {
             title: data.roleName,
             salary: data.roleSalary,
@@ -266,5 +270,32 @@ function addRole() {
 }
 
 function updateRole() {
-    
+    inquirer.prompt([
+        {
+            type: "list",
+            name: "updateEmp",
+            message: "Select the employee you would like to update the role of.",
+            choices: employeesList
+        },
+        {
+            type: "list",
+            name: "newRole",
+            message: "What is the employee's new role?",
+            choices: rolesList
+        }
+    ]).then(function(data) {
+        let dataA = data.updateEmp;
+        let dataB = data.newRole;
+
+        connection.query("UPDATE employee SET role_id = ? WHERE id = ? ", 
+        [dataB, dataA],
+        function (error, res) {
+            if (error) throw error;
+        });
+
+        console.log("==================================");
+        console.log("Employee Role Successfully Update!");
+        console.log("==================================");
+        mainMenu();
+    });
 }
