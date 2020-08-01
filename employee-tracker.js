@@ -15,28 +15,31 @@ const connection = mysql.createConnection({
     database: "ems_db"
 });
 
-
-let showRoles;
-let showManagers;
-
 // Initiate MySQL Connection
 connection.connect(function(err) {
     if (err) throw err;
     console.log("connected as id " + connection.threadId + "\n");
 
-    connection.query("SELECT * FROM role", function (error, res) {
-        showRoles = res.map(role => ({ name: role.title, value: role.id }))
-    });
-
-    connection.query("SELECT * FROM employee WHERE manager_id IS NULL", function (error, res) {
-        showManagers = res.map(emp => ({ name: `${emp.first_name} ${emp.last_name}`, value: emp.id }))
-    });
-
-
     mainMenu();
 });
 
+let rolesList;
+let managersList;
+let departmentsList;
+
 function mainMenu() {
+    connection.query("SELECT * FROM role", function(error, res) {
+        rolesList = res.map(role => ({name: role.title, value: role.id}))
+    });
+
+    connection.query("SELECT * FROM employee WHERE manager_id IS NULL", function(error, res) {
+        managersList = res.map(emp => ({name: `${emp.first_name} ${emp.last_name}`, value: emp.id}))
+    });
+
+    connection.query("SELECT * FROM department", function(error, res) {
+        departmentsList = res.map(dept => ({name: dept.name, value: dept.id}))
+    });
+
     inquirer
     .prompt(
       {
@@ -169,29 +172,29 @@ function viewRoles() {
 function addEmp() {
     inquirer.prompt([
         {
-          type: 'input',
-          name: "firstName",
-          message: "What is the employee's first name?"
+            type: 'input',
+            name: "firstName",
+            message: "What is the employee's first name?"
         },
         {
-          type: "input",
-          name: "lastName",
-          message: "What is the employee's last name?"
+            type: "input",
+            name: "lastName",
+            message: "What is the employee's last name?"
         },
         {
-          type: "list",
-          name: "role",
-          message: "What is the employee's role?",
-          choices: showRoles
+            type: "list",
+            name: "role",
+            message: "What is the employee's role?",
+            choices: rolesList
         },
         {
-          type: "list",
-          name: "manager",
-          message: "Who is the employee's manager?",
-          choices: showManagers
+            type: "list",
+            name: "manager",
+            message: "Who is the employee's manager?",
+            choices: managersList
         }
     ]).then(function(data) {
-        connection.query("INSERT INTO employee SET ? ",
+        connection.query("INSERT INTO employee SET ?",
         {
             first_name: data.firstName,
             last_name: data.lastName,
@@ -200,9 +203,9 @@ function addEmp() {
         }, function (error, res) {
             if (error) throw error;
         });
-        console.log("============================");
-        console.log("Employee Successfully Added!");
-        console.log("============================");
+        console.log("================================");
+        console.log("New Employee Successfully Added!");
+        console.log("================================");
         mainMenu();
     });
 }
@@ -210,20 +213,58 @@ function addEmp() {
 function addDept() {
     inquirer.prompt([
         {
-          type: 'input',
-          name: "deptName",
-          message: "Please enter the name of the department you would like to add."
+            type: 'input',
+            name: "deptName",
+            message: "Please enter the name of the new department you would like to add."
         }
     ]).then(function(data) {
-        connection.query("INSERT INTO department SET ? ",
+        connection.query("INSERT INTO department SET ?",
         {
             name: data.deptName
         }, function (error, res) {
             if (error) throw error;
         });
+        console.log("==================================");
+        console.log("New Department Successfully Added!");
+        console.log("==================================");
+        mainMenu();
+    });
+}
+
+function addRole() {
+    inquirer.prompt([
+        {
+            type: 'input',
+            name: "roleName",
+            message: "What is the new role you would like to add?"
+        },
+        {
+            type: 'input',
+            name: "roleSalary",
+            message: "How much is the salary for this new role?"
+        },
+        {
+            type: 'list',
+            name: "roleDept",
+            message: "Which department does this new role belongs to?",
+            choices: departmentsList
+        }
+    ]).then(function(data) {
+        connection.query("INSERT INTO role SET ?",
+        {
+            title: data.roleName,
+            salary: data.roleSalary,
+            department_id: data.roleDept
+        }, function (error, res) {
+            if (error) throw error;
+        });
         console.log("============================");
-        console.log("Department Successfully Added!");
+        console.log("New Role Successfully Added!");
         console.log("============================");
         mainMenu();
     });
+}
+
+function updateRole() {
+    
 }
