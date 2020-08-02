@@ -13,10 +13,14 @@
 * [Contributing](#contributing)
 * [Tests](#tests)
 * [Questions](#questions)
+* [Video Link](#video-link)
+* [Screenshot](#screenshot)
 
 ## Installation
 ```
-Please run npm i locally to install all dependencies. Database connection credentials can be requested from the author or you can use the seed and schema file and run the data in your own MySQL account.
+Please run npm i locally to install all dependencies.
+Database connection credentials can be requested from the author
+or you can use the seed and schema file and run the data in your own MySQL account.
 ```
 
 ## Usage
@@ -43,7 +47,7 @@ Please direct all questions to:
 📧 mcroque89@gmail.com
 
 ## Video Link
-![Walkthrough Video](https://www.loom.com/share/b0eea2aa4ab0477391e11d1143ab001b)
+[Walkthrough Video](https://www.loom.com/share/b0eea2aa4ab0477391e11d1143ab001b)
 
 ## Screenshot
 ![CLI-image](assets/ems-image.png)
