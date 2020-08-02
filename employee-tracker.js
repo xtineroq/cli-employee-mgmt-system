@@ -92,6 +92,18 @@ function mainMenu() {
             value: "updateManager"
           },
           {
+            name: "Delete a Department",
+            value: "deleteDept"
+          },
+          {
+            name: "Delete a Role",
+            value: "deleteRole"
+          },
+          {
+            name: "Delete an Employee",
+            value: "deleteEmp"
+          },
+          {
             name: "Quit",
             value: "end"
           }
@@ -130,6 +142,15 @@ function execute(userChoice) {
             break;
         case "updateManager":
             updateManager();
+            break;
+        case "deleteDept":
+            deleteDept();
+            break;
+        case "deleteRole":
+            deleteRole();
+            break;
+        case "deleteEmp":
+            deleteEmp();
             break;
         case "end":
         connection.end();
@@ -198,12 +219,12 @@ function viewDept() {
     connection.query(
         `
             SELECT 
-                department.name AS 'Departments' 
+                department.name AS 'Department'
             FROM department
         `
         , function (error, res) {
-        console.table(res);
-        mainMenu();
+            console.table(res);
+            mainMenu();
         }
     );
 }
@@ -248,9 +269,16 @@ function addEmp() {
         },
         {
             type: "list",
+            name: "isManager",
+            message: "Is this employee a Manager?",
+            choices: ["YES", "NO"]
+        },
+        {
+            type: "list",
             name: "manager",
             message: "Who is the employee's manager?",
-            choices: managersList
+            choices: managersList,
+            when: (answer) => answer.isManager === "NO"
         }
     ]).then(function(data) {
         connection.query("INSERT INTO employee SET ? ",
@@ -358,6 +386,7 @@ function updateRole() {
     });
 }
 
+// Function to update employee manager
 function updateManager() {
     inquirer.prompt([
         {
@@ -385,6 +414,81 @@ function updateManager() {
         console.log("======================================");
         console.log("Employee Manager Successfully Updated!");
         console.log("======================================");
+        mainMenu();
+    });
+}
+
+// Function to delete a department
+function deleteDept() {
+    inquirer.prompt([
+        {
+            type: "list",
+            name: "delDept",
+            message: "Which department would you like to delete?",
+            choices: departmentsList
+        }
+    ]).then(function(data) {
+        let userChoice = data.delDept;
+
+        connection.query("DELETE FROM department WHERE id = ? "
+        , [userChoice]
+        , function (error, res) {
+            if (error) throw error;
+        });
+
+        console.log("================================");
+        console.log("Department Successfully Deleted!");
+        console.log("================================");
+        mainMenu();
+    });
+}
+
+// Function to delete a role
+function deleteRole() {
+    inquirer.prompt([
+        {
+            type: "list",
+            name: "delRole",
+            message: "Which employee role would you like to delete?",
+            choices: rolesList
+        }
+    ]).then(function(data) {
+        let userChoice = data.delRole;
+
+        connection.query("DELETE FROM role WHERE id = ? "
+        , [userChoice]
+        , function (error, res) {
+            if (error) throw error;
+        });
+
+        console.log("==========================");
+        console.log("Role Successfully Deleted!");
+        console.log("==========================");
+        mainMenu();
+    });
+}
+
+// Function to delete an employee
+function deleteEmp() {
+    inquirer.prompt([
+        {
+            type: "list",
+            name: "delEmp",
+            message: "Which specific employee would you like to delete?",
+            choices: employeesList
+        }
+    ]).then(function(data) {
+        let userChoice = data.delEmp;
+
+        connection.query("DELETE FROM employee WHERE id = ? "
+        , [userChoice]
+        , function (error, res) {
+            if (error) throw error;
+        });
+
+        console.log("==============================");
+        console.log("Employee Successfully Deleted!");
+        console.log("==============================");
         mainMenu();
     });
 }
